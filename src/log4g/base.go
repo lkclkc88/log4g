@@ -97,6 +97,9 @@ type Logger struct {
 }
 
 func getLoggerConfigByPath(path string) *LoggerConfig {
+	if nil == GlobalConfig {
+		return nil
+	}
 	configMap := make(map[string]LoggerConfig)
 	for _, v := range GlobalConfig.Loggers {
 		name := v.Name
@@ -139,18 +142,21 @@ func GetLogger() *Logger {
 	} else {
 		tmp := Logger{codePath: file}
 		logConfig := getLoggerConfigByPath(file)
-		var level Level = FATAL
-		appenders := make(map[string]*Appender, 0)
 		if nil != logConfig {
-			level = stringToLevel(logConfig.Level)
-			for _, v := range logConfig.Appenders {
-				appenders[v] = GlobalConfig.appenders[v]
+			var level Level = FATAL
+			appenders := make(map[string]*Appender, 0)
+			if nil != logConfig {
+				level = stringToLevel(logConfig.Level)
+				for _, v := range logConfig.Appenders {
+					appenders[v] = GlobalConfig.appenders[v]
+				}
 			}
+			tmp.level = level
+			tmp.appenders = appenders
+			loggerManager[file] = &tmp
 		}
-		tmp.level = level
-		tmp.appenders = appenders
-		loggerManager[file] = &tmp
 		return &tmp
+
 	}
 }
 
