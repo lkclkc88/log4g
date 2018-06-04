@@ -108,8 +108,8 @@ func timeToString(date time.Time) string {
 }
 
 func (record *LogRecord) toString() string {
-	format := "[%s] [%s] [%s] %s(%d) %s "
-	return fmt.Sprintf(format, timeToString(record.date), levelToString(record.level), record.codePath, record.method, record.line, record.content)
+	format := "[%s] [%s]  %s(%d) %s "
+	return fmt.Sprintf(format, timeToString(record.date), levelToString(record.level), record.method, record.line, record.content)
 }
 
 type Appender interface {
