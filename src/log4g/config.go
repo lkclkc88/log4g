@@ -79,6 +79,7 @@ func LoadConfig(file *os.File) {
 		}
 		logConfig.initConfig()
 		GlobalConfig = logConfig
+		loggerManager.initLoggerManager()
 
 	}
 }

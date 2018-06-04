@@ -4,12 +4,44 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
 //日志管理器
-var loggerManager map[string]*Logger = make(map[string]*Logger)
+//var loggerManager map[string]*Logger = make(map[string]*Logger)
+var loggerManager LoggerManager = newLoggerManager()
 var GlobalConfig *LogConfig //全局配置信息
+
+type LoggerManager struct {
+	loggerManager map[string]*Logger
+	lock          sync.RWMutex
+}
+
+func newLoggerManager() LoggerManager {
+	tmp := LoggerManager{loggerManager: make(map[string]*Logger)}
+	return tmp
+}
+
+func (loggerManager *LoggerManager) put(key string, v *Logger) {
+	loggerManager.lock.Lock()
+	defer loggerManager.lock.Unlock()
+	loggerManager.loggerManager[key] = v
+}
+
+func (loggerManager *LoggerManager) get(key string) *Logger {
+	loggerManager.lock.RLock()
+	defer loggerManager.lock.RUnlock()
+	return loggerManager.loggerManager[key]
+}
+
+func (loggerManager *LoggerManager) initLoggerManager() {
+	loggerManager.lock.Lock()
+	defer loggerManager.lock.Unlock()
+	for _, v := range loggerManager.loggerManager {
+		initLogger(v)
+	}
+}
 
 type Level uint8 //日志级别
 
@@ -134,27 +166,46 @@ func getLoggerConfigByPath(path string) *LoggerConfig {
 	return nil
 }
 
+func initLogger(tmp *Logger) {
+	logConfig := getLoggerConfigByPath(tmp.codePath)
+	if nil != logConfig {
+		var level Level = FATAL
+		appenders := make(map[string]*Appender, 0)
+		if nil != logConfig {
+			level = stringToLevel(logConfig.Level)
+			for _, v := range logConfig.Appenders {
+				appenders[v] = GlobalConfig.appenders[v]
+			}
+		}
+		tmp.level = level
+		tmp.appenders = appenders
+	}
+}
+
 func GetLogger() *Logger {
 	_, file, _, _ := runtime.Caller(1)
-	logger := loggerManager[file]
+	logger := loggerManager.get(file)
 	if nil != logger {
 		return logger
 	} else {
 		tmp := Logger{codePath: file}
-		logConfig := getLoggerConfigByPath(file)
-		if nil != logConfig {
-			var level Level = FATAL
-			appenders := make(map[string]*Appender, 0)
-			if nil != logConfig {
-				level = stringToLevel(logConfig.Level)
-				for _, v := range logConfig.Appenders {
-					appenders[v] = GlobalConfig.appenders[v]
-				}
-			}
-			tmp.level = level
-			tmp.appenders = appenders
-			loggerManager[file] = &tmp
-		}
+		initLogger(&tmp)
+		//		loggerManager[file] = &tmp
+		loggerManager.put(file, &tmp)
+		//		logConfig := getLoggerConfigByPath(file)
+		//		if nil != logConfig {
+		//			var level Level = FATAL
+		//			appenders := make(map[string]*Appender, 0)
+		//			if nil != logConfig {
+		//				level = stringToLevel(logConfig.Level)
+		//				for _, v := range logConfig.Appenders {
+		//					appenders[v] = GlobalConfig.appenders[v]
+		//				}
+		//			}
+		//			tmp.level = level
+		//			tmp.appenders = appenders
+		//			loggerManager[file] = &tmp
+		//		}
 		return &tmp
 
 	}
