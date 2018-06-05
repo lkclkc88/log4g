@@ -7,25 +7,27 @@ import (
 	"strings"
 )
 
-// 日志配置
+// 日志配置，包含所有配置信息
 type LogConfig struct {
 	appenders    map[string]*Appender
 	Loggers      []LoggerConfig
 	AppendersMap map[string]LoggerAppenderConfig
 }
-
+// 日志工具配置
 type LoggerConfig struct {
-	Name      string
-	Level     string
-	Appenders []string
+	Name     string
+	Level string
+	Appenders []string   
 }
-
+//日志数据工具配置
 type LoggerAppenderConfig struct {
 	Appender string
 	Level    string
 	FileName string
 	Async    bool
 	BakLevel int
+
+
 }
 
 func (c *LogConfig) initConfig() {

@@ -3,6 +3,7 @@ package log4g
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -17,25 +18,26 @@ const (
 	QUEUE_SIZE = 1024
 )
 
+//文件输出工具
 type fileAppender struct {
 	level    Level         // 日志级别
 	out      *bufio.Writer //输出
 	fileName string        // 输出文件名
 	//	filePattern string          //备份文件路径
-	//	maxBak      int             //最大备份书
+	MaxBak   int             //最大备份书 默认10
 	bakLevel int             //备份级别, 1 天,2 小时 默认天
 	async    bool            //是否异步
 	queue    chan *LogRecord //队列
-
-	lock  sync.RWMutex
-	count int
+	lock     sync.RWMutex
+	count    int
 }
 
 func newFileAppender() *fileAppender {
-	tmp := fileAppender{bakLevel: 1}
+	tmp := fileAppender{bakLevel: 1, MaxBak: 10}
 	return &tmp
 }
 
+//初始化文件工具
 func (c *fileAppender) initConfig(config LoggerAppenderConfig) {
 	if "" != config.Level {
 		c.level = stringToLevel(config.Level)
@@ -50,7 +52,7 @@ func (c *fileAppender) initConfig(config LoggerAppenderConfig) {
 	}
 }
 
-// 写字符串到文件
+// 写字符串到文件，如果是异步写，写１５次之后，刷新缓冲区
 func (c *fileAppender) writeString(data string) {
 	if c.async {
 		c.lock.RLock()
@@ -71,7 +73,7 @@ func (c *fileAppender) writeString(data string) {
 	}
 }
 
-//写入一部队列
+//写入异步队列
 func (c *fileAppender) write(log *LogRecord) { //写日志
 	if log.level >= c.level {
 		if c.async {
@@ -86,6 +88,7 @@ func (c *fileAppender) getLevel() Level { //获取日志级别
 	return DEBUG
 }
 
+//备份日志文件，后去需要增加数据压缩
 func (c *fileAppender) bakFile(end string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -96,26 +99,65 @@ func (c *fileAppender) bakFile(end string) {
 
 }
 
+//备份数据时，获取时间
 func getTimeStr(t time.Time, foramat string, bakLevel int) string {
 	t = t.Add(-10 * time.Second)
 	return t.Format(foramat)
 }
 
+//获取下次一次备份的时间
 func getNextTime(bakLevel int, t time.Time) time.Time {
 	num := 0
 	switch bakLevel {
 	case 1:
 		num = (24-t.Hour())*3600 - (t.Minute()*60 + t.Second())
-
 	case 2:
 		num = 3600 - (t.Minute()*60 + t.Second())
-
 	case 3:
 		num = 60 - t.Second()
 	}
-
 	t = t.Add(time.Duration(num) * time.Second)
 	return t
+}
+
+func softFile(fs *[]os.FileInfo) {
+	tmp := *fs
+	size := len(tmp)
+	if size > 2 {
+		for i := 1; i < size; i++ {
+			for j := i; j > 0; j-- {
+				if tmp[j].ModTime().Unix() > tmp[j-1].ModTime().Unix() {
+					t := tmp[j]
+					tmp[j] = tmp[j-1]
+					tmp[j-1] = t
+				} else {
+					break
+				}
+			}
+		}
+	}
+}
+
+//清理历史备份
+func (c *fileAppender) cleanHistoryBak() {
+	parentPath := getParentDirectory(c.fileName)
+	fileName := strings.Replace(c.fileName, parentPath+"/", "", 1)
+	files, _ := ioutil.ReadDir(parentPath)
+	fs := make([]os.FileInfo, 0)
+	for _, f := range files {
+		if strings.Contains(f.Name(), fileName) && f.Name() != fileName {
+			fs = append(fs, f)
+		}
+	}
+	size := len(fs)
+	if size > c.MaxBak {
+		softFile(&fs)
+		for i := 10; i < size; i++ {
+			f := fs[i]
+			os.Remove(parentPath + "/" + f.Name())
+		}
+	}
+
 }
 
 //备份的timer
@@ -147,11 +189,13 @@ func (c *fileAppender) bakTimer() {
 			}
 
 		}
+		c.cleanHistoryBak()
 		time.Sleep(time.Duration(t) * time.Second)
 	}
 
 }
 
+//异步写
 func (c *fileAppender) asyncWrite() {
 	for {
 		lr := <-c.queue
@@ -163,10 +207,8 @@ func (c *fileAppender) asyncWrite() {
 
 func (c *fileAppender) initAppender() {
 	if checkFile(c.fileName, false) {
-		//		f, _ := os.OpenFile(c.fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
 		f, _ := os.Create(c.fileName)
 		c.out = bufio.NewWriter(f)
-		//		c.out = f
 		if c.async {
 			c.queue = make(chan *LogRecord, QUEUE_SIZE)
 			go c.asyncWrite()
@@ -211,8 +253,6 @@ func checkFile(filePath string, path bool) bool {
 					} else {
 						return true
 					}
-					//				} else {
-					//					os.Open(filePath)
 				} else {
 					os.Create(filePath)
 				}
