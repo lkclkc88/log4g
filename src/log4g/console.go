@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+//工作台输出工具
 type consoleAppender struct {
 	level Level         // 日志级别
 	out   *bufio.Writer //输出
