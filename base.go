@@ -23,12 +23,13 @@ type LoggerManager struct {
 type Level uint8 //日志级别
 //日志级别
 const (
-	_ Level = iota
+	All Level = iota
 	DEBUG
 	INFO
 	WARN
 	ERROR
 	FATAL
+	OFF
 )
 
 //日志记录
@@ -178,7 +179,7 @@ func getLoggerConfigByPath(path string) *LoggerConfig {
 func initLogger(tmp *Logger) {
 	logConfig := getLoggerConfigByPath(tmp.codePath)
 	if nil != logConfig {
-		var level Level = FATAL
+		var level Level = OFF
 		appenders := make(map[string]*Appender, 0)
 		if nil != logConfig {
 			level = stringToLevel(logConfig.Level)
