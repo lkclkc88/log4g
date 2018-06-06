@@ -23,7 +23,7 @@ type LoggerManager struct {
 type Level uint8 //日志级别
 //日志级别
 const (
-	All Level = iota
+	ALL Level = iota
 	DEBUG
 	INFO
 	WARN
@@ -99,9 +99,13 @@ func levelToString(level Level) string {
 		return "ERROR"
 	case FATAL:
 		return "FATAL"
+	case ALL:
+		return "ALL"
+	case OFF:
+		return "OFF"
 	}
 
-	return "Default"
+	return "OFF"
 }
 
 //　字符串转level
@@ -117,12 +121,15 @@ func stringToLevel(level string) Level {
 			return WARN
 		case "error":
 			return ERROR
-		case "FATAL":
+		case "fatal":
 			return FATAL
-
+		case "all":
+			return ALL
+		case "off":
+			return OFF
 		}
 	}
-	return FATAL
+	return OFF
 }
 
 // 时间转字符串
