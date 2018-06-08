@@ -9,7 +9,6 @@ import (
 )
 
 //日志管理器
-//var loggerManager map[string]*Logger = make(map[string]*Logger)
 var loggerManager LoggerManager = newLoggerManager()
 
 //全局配置信息
@@ -23,7 +22,7 @@ type LoggerManager struct {
 type Level uint8 //日志级别
 //日志级别
 const (
-	All Level = iota
+	ALL Level = iota
 	DEBUG
 	INFO
 	WARN
@@ -99,9 +98,13 @@ func levelToString(level Level) string {
 		return "ERROR"
 	case FATAL:
 		return "FATAL"
+	case OFF:
+		return "OFF"
+	case ALL:
+		return "ALL"
 	}
 
-	return "Default"
+	return "OFF"
 }
 
 //　字符串转level
@@ -119,10 +122,14 @@ func stringToLevel(level string) Level {
 			return ERROR
 		case "FATAL":
 			return FATAL
+		case "all":
+			return ALL
+		case "off":
+			return OFF
 
 		}
 	}
-	return FATAL
+	return OFF
 }
 
 // 时间转字符串

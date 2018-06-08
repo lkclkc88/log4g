@@ -8,6 +8,7 @@
 			"fileName": "/home/lkclkc88/log4g/debug.log",  //文件名
 			"async": true,    //是否使用日志异步
 			"level": "DEBUG",   //日志级别 日志级别支持debug,info,warn,error, 不区分大小写
+			"MaxBak":10,  // 最大备份数,默认10份
 			"bakLevel": 3   //备份级别, 1天,2小时,3分钟,  文件按照备份级别切割文件,备份是,文件为fileName+time 
 		}
 	},

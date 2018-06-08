@@ -12,7 +12,7 @@ type consoleAppender struct {
 }
 
 func newConsoleAppender() *consoleAppender {
-	tmp := consoleAppender{level: DEBUG}
+	tmp := consoleAppender{level: ALL}
 	tmp.out = bufio.NewWriter(os.Stdout)
 	return &tmp
 }

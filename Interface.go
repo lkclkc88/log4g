@@ -48,15 +48,15 @@ func (log *Logger) Info(args ...interface{}) {
 		log.write(INFO, data)
 	}
 }
-func (log *Logger) Warn(arg interface{}, args ...interface{}) {
+func (log *Logger) Warn(args ...interface{}) {
 	if log.IsWarn() {
-		data := log.buildLogRecord(DEBUG, args...)
+		data := log.buildLogRecord(WARN, args...)
 		log.write(WARN, data)
 	}
 }
-func (log *Logger) Error(arg interface{}, args ...interface{}) {
+func (log *Logger) Error(args ...interface{}) {
 	if log.IsWarn() {
-		data := log.buildLogRecord(DEBUG, args...)
+		data := log.buildLogRecord(ERROR, args...)
 		log.write(ERROR, data)
 	}
 }

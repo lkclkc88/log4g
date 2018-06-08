@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	H_FORAMAT  = "2006-01-02_15"
-	D_FORAMAT  = "2006-01-02"
-	M_FORAMAT  = "2006-01-02_15:04"
-	S_FORAMAT  = "2006-01-02_15:04:05"
-	QUEUE_SIZE = 1024
+	H_FORAMAT       = "2006-01-02_15"
+	D_FORAMAT       = "2006-01-02"
+	M_FORAMAT       = "2006-01-02_15:04"
+	S_FORAMAT       = "2006-01-02_15:04:05"
+	QUEUE_SIZE      = 1024
+	DEFAULT_MAX_BAK = 10
 )
 
 //文件输出工具
@@ -33,7 +34,7 @@ type fileAppender struct {
 }
 
 func newFileAppender() *fileAppender {
-	tmp := fileAppender{bakLevel: 1, MaxBak: 10}
+	tmp := fileAppender{bakLevel: 1, MaxBak: DEFAULT_MAX_BAK}
 	return &tmp
 }
 
