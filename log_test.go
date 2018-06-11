@@ -1,52 +1,43 @@
 package log4g
 
 import (
-	"bufio"
-//	"fmt"
+	//	"bufio"
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestLog(t *testing.T) {
-	//	path := "/home/lkclkc88/goWorkspace/log4g/config/logConfig.json"
-	//	f, error := os.Open(path)
-	//	if nil == error {
-	//		LoadConfig(f)
-	//	}
-	//	log := GetLogger()
-	//	for {
-	//		log.Debug(" test")
-	//	}
-
-	path := "/home/lkclkc88/Desktop/t"
-	f, _ := os.Open(path)
-	//	buff := make([]string, 0)
-	r := bufio.NewReader(f)
-	out,_ := os.Create("/home/lkclkc88/Desktop/t1")
-	for {
-		//		tmp := make([]byte, 1024)
-		//		n, _ := f.Read(tmp)
-		tmp, _, _ := r.ReadLine()
-		if nil != tmp && len(tmp) > 0 {
-			strs := strings.Split(string(tmp), ",")
-			//			fmt.Println(strs[0])
-			//			buff = append(buff, strs[0])
-			out.WriteString("\"" + strs[0] + "\",\n")
-		}
-		//		if n > 0 {
-		//			buff = append(buff, tmp[:n]...)
-		//			if n < 1024 {
-		//				break
-		//			}
-		//		} else {
-		//			break
-		//		}
+func GetCurrentDirectory() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		//		log.Error(err)
 	}
-	defer out.Close()
-	//	for _, v := range buff {
-	//		fmt.Println(v)
-	//	}
-	//	fmt.Println(string(buff))
+	return strings.Replace(dir, "\\", "/", -1)
+}
 
+func TestLog(t *testing.T) {
+	//	path := GetCurrentDirectory()
+	path := "/home/lkclkc88/git/log4g/logConfig.json"
+	fmt.Println(path)
+	//	Loger.LoadConfiguration(path, "json")
+	file, err := os.Open(path)
+	if nil == err {
+		LoadConfig(file)
+		log := GetLogger()
+		log.Info("---------init log read config " + path + "--------")
+		for i := 0; i < 1000; i++ {
+			log.Info("test", i)
+			log.Warn("test", i)
+		}
+		fmt.Println(log.IsDebug())
+		fmt.Println(log.IsInfo())
+		fmt.Println(log.IsWarn())
+
+		fmt.Println(log.IsError())
+		log.Warn(" execute complate")
+	} else {
+		fmt.Println("init log file failed")
+	}
 }

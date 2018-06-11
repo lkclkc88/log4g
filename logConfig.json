@@ -7,15 +7,16 @@
 			"appender": "file",
 			"name": "debugFile",
 			"fileName": "/home/lkclkc88/log4g/debug.log",
-			"async": true,
+			"async": false,
 			"level": "DEBUG",
-			"bakLevel": 3
+			"MaxBak":10,
+			"bakLevel": 1
 		}
 	},
 	"loggers": [{
 			"name": "root",
-			"level": "debug",
-			"appenders": [ "debugFile"]
+			"level": "WARN",
+			"appenders": [ "debugFile","console"]
 		},
 		{
 			"name": "main",
