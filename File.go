@@ -49,14 +49,27 @@ func (c *fileAppender) initConfig(config LoggerAppenderConfig) {
 		} else {
 			c.bakLevel = 1
 		}
-		c.initAppender()
+		if checkFile(c.fileName, false) {
+			f, _ := os.Create(c.fileName)
+			c.out = bufio.NewWriter(f)
+			if c.async {
+				c.queue = make(chan *LogRecord, QUEUE_SIZE)
+				go c.asyncWrite()
+			}
+			go c.bakTimer()
+		} else {
+			fmt.Println(" init file failed ", c.fileName)
+		}
 	}
 }
 
 // 写字符串到文件，如果是异步写，写１５次之后，刷新缓冲区
 func (c *fileAppender) writeString(data string) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+
+	defer func() {
+		if err := recover(); err != nil {
+		}
+	}()
 	if c.async {
 		c.out.WriteString(data)
 		if c.count > 15 {
@@ -78,6 +91,8 @@ func (c *fileAppender) write(log *LogRecord) { //写日志
 		if c.async {
 			c.queue <- log
 		} else {
+			c.lock.Lock()
+			defer c.lock.Unlock()
 			c.writeString(log.toString())
 		}
 	}
@@ -201,20 +216,6 @@ func (c *fileAppender) asyncWrite() {
 		if nil != lr {
 			c.writeString(lr.toString())
 		}
-	}
-}
-
-func (c *fileAppender) initAppender() {
-	if checkFile(c.fileName, false) {
-		f, _ := os.Create(c.fileName)
-		c.out = bufio.NewWriter(f)
-		if c.async {
-			c.queue = make(chan *LogRecord, QUEUE_SIZE)
-			go c.asyncWrite()
-		}
-		go c.bakTimer()
-	} else {
-		fmt.Println(" init file failed ", c.fileName)
 	}
 }
 

@@ -10,7 +10,9 @@ import (
 type consoleAppender struct {
 	level Level         // 日志级别
 	out   *bufio.Writer //输出
+	async bool          //是否异步
 	lock  sync.Mutex
+	ch    chan *LogRecord
 }
 
 func newConsoleAppender() *consoleAppender {
@@ -22,16 +24,43 @@ func newConsoleAppender() *consoleAppender {
 func (c *consoleAppender) initConfig(config LoggerAppenderConfig) {
 	if "" != config.Level {
 		c.level = stringToLevel(config.Level)
+		c.async = config.Async
+		if c.async {
+			c.ch = make(chan *LogRecord, 1024)
+			go c.asyncWrite()
+		}
 	}
 }
 
 func (c *consoleAppender) write(log *LogRecord) { //写日志
 	if log.level >= c.level {
-		c.lock.Lock()
-		defer c.lock.Unlock()
-		c.out.WriteString(log.toString())
-		c.out.Flush()
+		if c.async {
+			c.ch <- log
+		} else {
+			c.lock.Lock()
+			defer c.lock.Unlock()
+			c.writeString(log.toString())
+		}
 	}
+}
+
+func (c *consoleAppender) asyncWrite() {
+	for {
+		tmp <- c.ch
+		if nil != tmp {
+			c.writeString(tmp.toString())
+		}
+	}
+}
+
+func (c *consoleAppender) writeString(data string) { //写日志
+	defer func() {
+		if err := recover(); err != nil {
+		}
+	}()
+	c.out.WriteString(data)
+	c.out.Flush()
+
 }
 
 func (c *consoleAppender) getLevel() Level { //获取日志级别
