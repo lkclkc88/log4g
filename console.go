@@ -46,7 +46,7 @@ func (c *consoleAppender) write(log *LogRecord) { //写日志
 
 func (c *consoleAppender) asyncWrite() {
 	for {
-		tmp <- c.ch
+		tmp := <-c.ch
 		if nil != tmp {
 			c.writeString(tmp.toString())
 		}
