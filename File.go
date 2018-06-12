@@ -29,7 +29,7 @@ type fileAppender struct {
 	bakLevel int             //备份级别, 1 天,2 小时 默认天
 	async    bool            //是否异步
 	queue    chan *LogRecord //队列
-	lock     sync.RWMutex
+	lock     sync.Mutex
 	count    int
 }
 
@@ -55,9 +55,9 @@ func (c *fileAppender) initConfig(config LoggerAppenderConfig) {
 
 // 写字符串到文件，如果是异步写，写１５次之后，刷新缓冲区
 func (c *fileAppender) writeString(data string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	if c.async {
-		c.lock.RLock()
-		defer c.lock.RUnlock()
 		c.out.WriteString(data)
 		if c.count > 15 {
 			c.out.Flush()
@@ -67,8 +67,6 @@ func (c *fileAppender) writeString(data string) {
 		}
 		c.out.Flush()
 	} else {
-		c.lock.RLock()
-		defer c.lock.RUnlock()
 		c.out.WriteString(data)
 		c.out.Flush()
 	}
