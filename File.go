@@ -2,11 +2,13 @@ package log4g
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,13 +30,14 @@ type fileAppender struct {
 	MaxBak   int             //最大备份书 默认10
 	bakLevel int             //备份级别, 1 天,2 小时 默认天
 	async    bool            //是否异步
+	asyncNum int32           //异步队列任务数
 	queue    chan *LogRecord //队列
-	lock     sync.Mutex
+	lock     *sync.Mutex
 	count    int
 }
 
 func newFileAppender() *fileAppender {
-	tmp := fileAppender{bakLevel: 1, MaxBak: DEFAULT_MAX_BAK}
+	tmp := fileAppender{bakLevel: 1, MaxBak: DEFAULT_MAX_BAK, lock: &sync.Mutex{}}
 	return &tmp
 }
 
@@ -89,7 +92,9 @@ func (c *fileAppender) writeString(data string) {
 func (c *fileAppender) write(log *LogRecord) { //写日志
 	if log.level >= c.level {
 		if c.async {
+			atomic.AddInt32(&c.asyncNum, 1)
 			c.queue <- log
+
 		} else {
 			c.lock.Lock()
 			defer c.lock.Unlock()
@@ -214,6 +219,29 @@ func (c *fileAppender) asyncWrite() {
 	for {
 		lr := <-c.queue
 		if nil != lr {
+			num := atomic.AddInt32(&c.asyncNum, -1)
+			if num > 0 {
+				var buff bytes.Buffer
+				buff.WriteString(lr.toString())
+				var i int32 = 0
+				for ; i < num; i++ {
+					tmp := <-c.queue
+					if nil == tmp {
+						break
+					}
+					buff.WriteString(tmp.toString())
+
+					if buff.Len() >= 4096 {
+						c.writeString(buff.String())
+					}
+				}
+
+				if buff.Len() > 0 {
+					c.writeString(buff.String())
+				}
+				atomic.AddInt32(&c.asyncNum, -num)
+			}
+
 			c.writeString(lr.toString())
 		}
 	}

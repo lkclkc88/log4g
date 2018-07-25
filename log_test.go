@@ -4,31 +4,22 @@ import (
 	//	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
+	//	"path/filepath"
+	//	"strings"
 	"testing"
+	//	"time"
 )
 
-func GetCurrentDirectory() string {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		//		log.Error(err)
-	}
-	return strings.Replace(dir, "\\", "/", -1)
-}
-
 func TestLog(t *testing.T) {
-	//	path := GetCurrentDirectory()
-	path := "/home/lkclkc88/git/log4g/logConfig.json"
+	path := "/lkclkc88/git/log4g/logConfig.json"
 	fmt.Println(path)
-	//	Loger.LoadConfiguration(path, "json")
 	file, err := os.Open(path)
 	if nil == err {
 		LoadConfig(file)
 		log := GetLogger()
 		log.Info("---------init log read config " + path + "--------")
-		for i := 0; i < 1000; i++ {
-			log.Info("test", i)
+		for i := 0; i < 150000; i++ {
+			//			log.Info("test", i)
 			log.Warn("test", i)
 		}
 		fmt.Println(log.IsDebug())
@@ -40,4 +31,5 @@ func TestLog(t *testing.T) {
 	} else {
 		fmt.Println("init log file failed")
 	}
+	//	time.Sleep(35 * time.Second)
 }

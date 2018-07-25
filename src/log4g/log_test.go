@@ -7,6 +7,7 @@ import (
 	//	"path/filepath"
 	//	"strings"
 	"testing"
+	//	"time"
 )
 
 func TestLog(t *testing.T) {
@@ -17,7 +18,7 @@ func TestLog(t *testing.T) {
 		LoadConfig(file)
 		log := GetLogger()
 		log.Info("---------init log read config " + path + "--------")
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < 150000; i++ {
 			//			log.Info("test", i)
 			log.Warn("test", i)
 		}
@@ -30,4 +31,5 @@ func TestLog(t *testing.T) {
 	} else {
 		fmt.Println("init log file failed")
 	}
+	//	time.Sleep(35 * time.Second)
 }
