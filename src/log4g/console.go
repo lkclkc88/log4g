@@ -11,12 +11,12 @@ type consoleAppender struct {
 	level Level         // 日志级别
 	out   *bufio.Writer //输出
 	async bool          //是否异步
-	lock  sync.Mutex
+	lock  *sync.Mutex
 	ch    chan *LogRecord
 }
 
 func newConsoleAppender() *consoleAppender {
-	tmp := consoleAppender{level: ALL}
+	tmp := consoleAppender{level: ALL, lock: &sync.Mutex{}}
 	tmp.out = bufio.NewWriter(os.Stdout)
 	return &tmp
 }

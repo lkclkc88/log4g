@@ -17,7 +17,7 @@ var GlobalConfig *LogConfig
 //日志管理
 type LoggerManager struct {
 	loggerManager map[string]*Logger
-	lock          sync.RWMutex
+	lock          *sync.RWMutex
 }
 type Level uint8 //日志级别
 //日志级别
@@ -56,16 +56,16 @@ type Logger struct {
 	codePath  string               //代码路径
 	level     Level                //日志级别
 	appenders map[string]*Appender //日志记录工具集合
-	lock      sync.RWMutex         //加锁
+	lock      *sync.RWMutex        //加锁
 }
 
 func newLogger(path string) *Logger {
-	return &Logger{codePath: path}
+	return &Logger{codePath: path, lock: &sync.RWMutex{}}
 }
 
 //构建日志管理
 func newLoggerManager() LoggerManager {
-	tmp := LoggerManager{loggerManager: make(map[string]*Logger)}
+	tmp := LoggerManager{loggerManager: make(map[string]*Logger), lock: &sync.RWMutex{}}
 	return tmp
 }
 

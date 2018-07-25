@@ -6,7 +6,7 @@
 		"debugFile": {
 			"appender": "file",
 			"name": "debugFile",
-			"fileName": "/home/lkclkc88/log4g/debug.log",
+			"fileName": "/home/liaokucheng/log4g/debug.log",
 			"async": false,
 			"level": "DEBUG",
 			"MaxBak":10,

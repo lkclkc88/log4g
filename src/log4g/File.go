@@ -29,12 +29,12 @@ type fileAppender struct {
 	bakLevel int             //备份级别, 1 天,2 小时 默认天
 	async    bool            //是否异步
 	queue    chan *LogRecord //队列
-	lock     sync.Mutex
+	lock     *sync.Mutex
 	count    int
 }
 
 func newFileAppender() *fileAppender {
-	tmp := fileAppender{bakLevel: 1, MaxBak: DEFAULT_MAX_BAK}
+	tmp := fileAppender{bakLevel: 1, MaxBak: DEFAULT_MAX_BAK, lock: &sync.Mutex{}}
 	return &tmp
 }
 
