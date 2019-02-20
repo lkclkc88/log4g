@@ -1,4 +1,4 @@
-package log4g
+package imLog
 
 import (
 	"bufio"
@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -17,23 +16,21 @@ const (
 	D_FORAMAT       = "2006-01-02"
 	M_FORAMAT       = "2006-01-02_15:04"
 	S_FORAMAT       = "2006-01-02_15:04:05"
-	QUEUE_SIZE      = 1024
+	QUEUE_SIZE      = 8196
 	DEFAULT_MAX_BAK = 10
 )
 
-//文件输出工具
+//文件输出工具，实现Appender 接口
 type fileAppender struct {
 	level    Level         // 日志级别
 	out      *bufio.Writer //输出
 	fileName string        // 输出文件名
-	//	filePattern string          //备份文件路径
-	MaxBak   int             //最大备份书 默认10
-	bakLevel int             //备份级别, 1 天,2 小时 默认天
-	async    bool            //是否异步
-	asyncNum int32           //异步队列任务数
-	queue    chan *LogRecord //队列
-	lock     *sync.Mutex
-	count    int
+	MaxBak   int           //最大备份书 默认10
+	bakLevel int           //备份级别, 1 天,2 小时 默认天
+	async    bool          //是否异步
+	queue    *Queue        //队列,异步写文件时使用
+	lock     *sync.Mutex   //锁
+	count    int           //计数，用于异步写数据时，刷新缓存区
 }
 
 func newFileAppender() *fileAppender {
@@ -55,8 +52,9 @@ func (c *fileAppender) initConfig(config LoggerAppenderConfig) {
 		if checkFile(c.fileName, false) {
 			f, _ := os.Create(c.fileName)
 			c.out = bufio.NewWriter(f)
+			//			如果是异步，初始化队列
 			if c.async {
-				c.queue = make(chan *LogRecord, QUEUE_SIZE)
+				c.queue = NewQueue(QUEUE_SIZE)
 				go c.asyncWrite()
 			}
 			go c.bakTimer()
@@ -68,33 +66,32 @@ func (c *fileAppender) initConfig(config LoggerAppenderConfig) {
 
 // 写字符串到文件，如果是异步写，写１５次之后，刷新缓冲区
 func (c *fileAppender) writeString(data string) {
-
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
-	if c.async {
-		c.out.WriteString(data)
-		if c.count > 15 {
-			c.out.Flush()
-			c.count = 0
-		} else {
-			c.count++
-		}
-		c.out.Flush()
-	} else {
-		c.out.WriteString(data)
-		c.out.Flush()
-	}
+	//异常处理
+	defer recoverErr()
+	//如果是异步
+	//	if c.async {
+	//		c.out.WriteString(data)
+	//		if c.count > 10 {
+	//			c.out.Flush()
+	//			c.count = 0
+	//		} else {
+	//			c.count++
+	//		}
+	//		c.out.Flush()
+	//	} else {
+	//同步调用
+	c.out.WriteString(data)
+	c.out.Flush()
+	//	}
 }
 
 //写入异步队列
 func (c *fileAppender) write(log *LogRecord) { //写日志
+	defer recoverErr()
 	if log.level >= c.level {
 		if c.async {
-			atomic.AddInt32(&c.asyncNum, 1)
-			c.queue <- log
-
+			//写入队列
+			c.queue.Offer(log, time.Second)
 		} else {
 			c.lock.Lock()
 			defer c.lock.Unlock()
@@ -181,6 +178,7 @@ func (c *fileAppender) cleanHistoryBak() {
 
 //备份的timer
 func (c *fileAppender) bakTimer() {
+	defer recoverErr()
 	if c.bakLevel > 3 || c.bakLevel < 1 {
 		c.bakLevel = 1
 	}
@@ -216,33 +214,36 @@ func (c *fileAppender) bakTimer() {
 
 //异步写
 func (c *fileAppender) asyncWrite() {
+	recoverErr()
+	var buff bytes.Buffer
+	n := 0
 	for {
-		lr := <-c.queue
-		if nil != lr {
-			num := atomic.AddInt32(&c.asyncNum, -1)
-			if num > 0 {
-				var buff bytes.Buffer
-				buff.WriteString(lr.toString())
-				var i int32 = 0
-				for ; i < num; i++ {
-					tmp := <-c.queue
-					if nil == tmp {
-						break
-					}
-					buff.WriteString(tmp.toString())
+		n++
+		obj := c.queue.Get()
+		if nil != obj {
+			lr := obj.(*LogRecord)
+			buff.WriteString(lr.toString())
+		}
 
-					if buff.Len() >= 4096 {
-						c.writeString(buff.String())
-					}
-				}
-
-				if buff.Len() > 0 {
-					c.writeString(buff.String())
-				}
-				atomic.AddInt32(&c.asyncNum, -num)
+		size := buff.Len()
+		if size >= 4096 {
+			c.writeString(buff.String())
+			buff.Reset()
+			n = 0
+			continue
+		}
+		if n > 10 {
+			n = 0
+			if size > 0 {
+				c.writeString(buff.String())
+				buff.Reset()
+				continue
 			}
-
-			c.writeString(lr.toString())
+		}
+		x := c.queue.Poll(10 * time.Second)
+		if nil != x {
+			lr := x.(*LogRecord)
+			buff.WriteString(lr.toString())
 		}
 	}
 }

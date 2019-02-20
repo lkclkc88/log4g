@@ -1,17 +1,15 @@
-package log4g
+package imLog
 
 import (
-	//	"bufio"
 	"fmt"
 	"os"
-	//	"path/filepath"
-	//	"strings"
 	"testing"
-	//	"time"
+	"time"
 )
 
 func TestLog(t *testing.T) {
-	path := "/lkclkc88/git/log4g/logConfig.json"
+
+	path := "/lkclkc88/git/golib/log/src/imLog/test_logConfig.json"
 	fmt.Println(path)
 	file, err := os.Open(path)
 	if nil == err {
@@ -31,5 +29,5 @@ func TestLog(t *testing.T) {
 	} else {
 		fmt.Println("init log file failed")
 	}
-	//	time.Sleep(35 * time.Second)
+	time.Sleep(35 * time.Second)
 }

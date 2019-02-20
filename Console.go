@@ -1,4 +1,4 @@
-package log4g
+package imLog
 
 import (
 	"bufio"

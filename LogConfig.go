@@ -1,4 +1,4 @@
-package log4g
+package imLog
 
 import (
 	"encoding/json"
@@ -30,6 +30,7 @@ type LoggerAppenderConfig struct {
 	BakLevel int
 }
 
+//配置初始化
 func (c *LogConfig) initConfig() {
 	if nil != c.AppendersMap {
 		appenders := make(map[string]*Appender)
@@ -52,6 +53,7 @@ func (c *LogConfig) initConfig() {
 	}
 }
 
+//读取配置文件
 func LoadConfig(file *os.File) {
 	size := 1024
 	buff := make([]byte, 0)
@@ -80,8 +82,7 @@ func LoadConfig(file *os.File) {
 			fmt.Println(err)
 		}
 		logConfig.initConfig()
-		GlobalConfig = logConfig
-		loggerManager.initLoggerManager()
+		lm.initLoggerManager(logConfig)
 
 	}
 }
