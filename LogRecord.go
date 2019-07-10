@@ -1,4 +1,4 @@
-package imLog
+package log4g
 
 import (
 	"fmt"
