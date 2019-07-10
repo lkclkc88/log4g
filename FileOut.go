@@ -1,4 +1,4 @@
-package imLog
+package log4g
 
 import (
 	"bufio"
@@ -68,21 +68,9 @@ func (c *fileAppender) initConfig(config LoggerAppenderConfig) {
 func (c *fileAppender) writeString(data string) {
 	//异常处理
 	defer recoverErr()
-	//如果是异步
-	//	if c.async {
-	//		c.out.WriteString(data)
-	//		if c.count > 10 {
-	//			c.out.Flush()
-	//			c.count = 0
-	//		} else {
-	//			c.count++
-	//		}
-	//		c.out.Flush()
-	//	} else {
 	//同步调用
 	c.out.WriteString(data)
 	c.out.Flush()
-	//	}
 }
 
 //写入异步队列
@@ -212,39 +200,40 @@ func (c *fileAppender) bakTimer() {
 
 }
 
-//异步写
-func (c *fileAppender) asyncWrite() {
-	recoverErr()
+func (c *fileAppender) getDataFromQueueAndWrite(size int32) {
 	var buff bytes.Buffer
-	n := 0
-	for {
-		n++
-		obj := c.queue.Get()
-		if nil != obj {
-			lr := obj.(*LogRecord)
-			buff.WriteString(lr.toString())
-		}
-
-		size := buff.Len()
-		if size >= 4096 {
-			c.writeString(buff.String())
-			buff.Reset()
-			n = 0
-			continue
-		}
-		if n > 10 {
-			n = 0
-			if size > 0 {
-				c.writeString(buff.String())
-				buff.Reset()
-				continue
-			}
-		}
-		x := c.queue.Poll(10 * time.Second)
+	for size > 0 {
+		size--
+		x := c.queue.Get()
 		if nil != x {
 			lr := x.(*LogRecord)
 			buff.WriteString(lr.toString())
 		}
+		if buff.Len() > 4096 {
+			c.writeString(buff.String())
+			buff.Reset()
+		}
+	}
+}
+
+func (c *fileAppender) getDataAndWrite() {
+	defer recoverErr()
+	size := c.queue.Size()
+	if size > 0 {
+		c.getDataFromQueueAndWrite(size)
+	} else {
+		x := c.queue.Poll(10 * time.Second)
+		if nil != x {
+			lr := x.(*LogRecord)
+			c.writeString(lr.toString())
+		}
+	}
+}
+
+//异步写
+func (c *fileAppender) asyncWrite() {
+	for {
+		c.getDataAndWrite()
 	}
 }
 

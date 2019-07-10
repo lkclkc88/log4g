@@ -1,4 +1,4 @@
-package imLog
+package log4g
 
 import (
 	"sync/atomic"
@@ -17,17 +17,20 @@ func NewQueue(size uint64) *Queue {
 }
 
 func (q *Queue) Poll(timeOut time.Duration) interface{} {
-	tick := time.NewTicker(timeOut)
-	defer tick.Stop()
+	t := time.NewTimer(timeOut)
 	select {
 	case r := <-q.data:
 		atomic.AddInt32(&q.size, -1)
 		return r
-	case <-tick.C:
+	case <-t.C:
 		{
 			return nil
 		}
 	}
+}
+
+func (q *Queue) Size() int32 {
+	return atomic.LoadInt32(&q.size)
 }
 
 func (q *Queue) Get() interface{} {
@@ -42,13 +45,12 @@ func (q *Queue) Get() interface{} {
 }
 
 func (q *Queue) Offer(obj interface{}, timeOut time.Duration) bool {
-	tick := time.NewTicker(timeOut)
-	defer tick.Stop()
+	t := time.NewTimer(timeOut)
 	select {
 	case q.data <- obj:
 		atomic.AddInt32(&q.size, 1)
 		return true
-	case <-tick.C:
+	case <-t.C:
 		{
 			return false
 		}

@@ -1,24 +1,14 @@
-package imLog
+package log4g
 
 import (
-	"bufio"
-	"os"
 	"runtime"
-	"runtime/debug"
+	"strings"
 )
 
 var log = GetLogger()
 
-//异常处理
-func recoverErr() {
-	if err := recover(); err != nil {
-		write := bufio.NewWriter(os.Stdout)
-		buff := debug.Stack()
-		if nil != buff {
-			write.Write(debug.Stack())
-		}
-	}
-}
+//日志管理器
+var lm LoggerManager = newLoggerManager()
 
 //获取日志对象
 func GetLogger() *Logger {
@@ -85,5 +75,41 @@ func (log *Logger) Error(args ...interface{}) {
 	}
 }
 
-//日志管理器
-var lm LoggerManager = newLoggerManager()
+//根据文件路径，获取对应的日志配置信息
+func getLoggerConfigByPath(path string) *LoggerConfig {
+	if nil == lm.config {
+		return nil
+	}
+	configMap := make(map[string]LoggerConfig)
+	for _, v := range lm.config.Loggers {
+		name := v.Name
+		if "" != name {
+			if v.Name == "root" || strings.Contains(path, name) {
+				if nil != v.Appenders {
+					configMap[v.Name] = v
+				}
+			}
+		}
+	}
+	size := len(configMap)
+	if size > 0 {
+
+		if size > 1 {
+			delete(configMap, "root") //当存在多个配置的时候,优先使用局部被指,移除全局配置,只保留路径最长的配置
+			key := ""
+			for k, _ := range configMap {
+				if len(k) > len(key) {
+					key = k
+				}
+			}
+			config := configMap[key]
+			return &config
+		} else {
+			//只有一个配置的时候,直接返回
+			for _, v := range configMap {
+				return &v
+			}
+		}
+	}
+	return nil
+}
