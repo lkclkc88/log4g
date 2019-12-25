@@ -9,7 +9,7 @@ import (
 
 func TestLog(t *testing.T) {
 
-	path := "/lkclkc88/git/golib/log/src/imLog/test_logConfig.json"
+	path := "/lkclkc88/godev/src/github.com/log4g/logConfig.json"
 	fmt.Println(path)
 	file, err := os.Open(path)
 	if nil == err {

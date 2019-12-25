@@ -9,6 +9,10 @@ type Appender interface {
 	*/
 	write(log *LogRecord)
 	/**
+	同步写日志
+	*/
+	syncWrite(log *LogRecord)
+	/**
 	  获取日志级别
 	*/
 	getLevel() Level

@@ -46,6 +46,15 @@ func (c *consoleAppender) write(log *LogRecord) { //写日志
 	}
 }
 
+//写日志
+func (c *consoleAppender) syncWrite(log *LogRecord) { //写日志
+	if log.level >= c.level {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+		c.writeString(log.toString())
+	}
+}
+
 //异步写数据
 func (c *consoleAppender) asyncWrite() {
 	for {

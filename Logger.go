@@ -66,3 +66,17 @@ func (log *Logger) write(level Level, record *LogRecord) {
 		}
 	}
 }
+
+//写数据
+func (log *Logger) syncWrite(level Level, record *LogRecord) {
+	log.lock.RLock()
+	defer log.lock.RUnlock()
+	if nil != log.appenders {
+		for _, v := range log.appenders {
+			t := *v
+			if t.getLevel() <= level {
+				t.syncWrite(record)
+			}
+		}
+	}
+}

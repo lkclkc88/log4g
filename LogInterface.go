@@ -75,6 +75,38 @@ func (log *Logger) Error(args ...interface{}) {
 	}
 }
 
+//同步写入debug日志
+func (log *Logger) SyncDebug(args ...interface{}) {
+	if log.IsDebug() {
+		data := log.buildLogRecord(DEBUG, args...)
+		log.syncWrite(DEBUG, data)
+	}
+}
+
+//同步写入info日志
+func (log *Logger) SyncInfo(args ...interface{}) {
+	if log.IsInfo() {
+		data := log.buildLogRecord(INFO, args...)
+		log.syncWrite(INFO, data)
+	}
+}
+
+//同步写入warn日志
+func (log *Logger) SyncWarn(args ...interface{}) {
+	if log.IsWarn() {
+		data := log.buildLogRecord(WARN, args...)
+		log.syncWrite(WARN, data)
+	}
+}
+
+//同步写入error日志
+func (log *Logger) SyncError(args ...interface{}) {
+	if log.IsWarn() {
+		data := log.buildLogRecord(ERROR, args...)
+		log.syncWrite(ERROR, data)
+	}
+}
+
 //根据文件路径，获取对应的日志配置信息
 func getLoggerConfigByPath(path string) *LoggerConfig {
 	if nil == lm.config {

@@ -88,6 +88,16 @@ func (c *fileAppender) write(log *LogRecord) { //写日志
 	}
 }
 
+//写日志
+func (c *fileAppender) syncWrite(log *LogRecord) { //写日志
+	defer recoverErr()
+	if log.level >= c.level {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+		c.writeString(log.toString())
+	}
+}
+
 func (c *fileAppender) getLevel() Level { //获取日志级别
 	return DEBUG
 }
